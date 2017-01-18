@@ -48,44 +48,97 @@ TPOT can be used [on the command line](http://rhiever.github.io/tpot/using/#tpot
 
 Click on the corresponding links to find more information on TPOT usage in the documentation.
 
-## Example
+## Examples
+
+### Classification
 
 Below is a minimal working example with the practice MNIST data set.
 
 ```python
-from tpot import TPOT
+from tpot import TPOTClassifier
 from sklearn.datasets import load_digits
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 
 digits = load_digits()
 X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
                                                     train_size=0.75, test_size=0.25)
 
-tpot = TPOT(generations=5)
+tpot = TPOTClassifier(generations=5, population_size=20, verbosity=2)
 tpot.fit(X_train, y_train)
 print(tpot.score(X_test, y_test))
 tpot.export('tpot_mnist_pipeline.py')
 ```
 
-Running this code should discover a pipeline that achieves ~98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
+Running this code should discover a pipeline that achieves about 98% testing accuracy, and the corresponding Python code should be exported to the `tpot_mnist_pipeline.py` file and look similar to the following:
 
 ```python
-import pandas as pd
+import numpy as np
 
-from sklearn.cross_validation import train_test_split
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import make_pipeline
 
 # NOTE: Make sure that the class is labeled 'class' in the data file
-tpot_data = pd.read_csv('PATH/TO/DATA/FILE', sep='COLUMN_SEPARATOR')
-training_indices, testing_indices = train_test_split(tpot_data.index, stratify = tpot_data['class'].values, train_size=0.75, test_size=0.25)
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
+                     tpot_data.dtype.names.index('class'), axis=1)
 
-result1 = tpot_data.copy()
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
 
-# Perform classification with a random forest classifier
-rfc1 = RandomForestClassifier(n_estimators=200, max_features=min(64, len(result1.columns) - 1))
-rfc1.fit(result1.loc[training_indices].drop('class', axis=1).values, result1.loc[training_indices, 'class'].values)
-result1['rfc1-classification'] = rfc1.predict(result1.drop('class', axis=1).values)
+exported_pipeline = make_pipeline(
+    KNeighborsClassifier(n_neighbors=3, weights="uniform")
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
 ```
+
+### Regression
+
+Similarly, TPOT can optimize pipelines for regression problems. Below is a minimal working example with the practice Boston housing prices data set.
+
+```python
+from tpot import TPOTRegressor
+from sklearn.datasets import load_boston
+from sklearn.model_selection import train_test_split
+
+digits = load_boston()
+X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target,
+                                                    train_size=0.75, test_size=0.25)
+
+tpot = TPOTRegressor(generations=5, population_size=20, verbosity=2)
+tpot.fit(X_train, y_train)
+print(tpot.score(X_test, y_test))
+tpot.export('tpot_boston_pipeline.py')
+```
+
+which should result in a pipeline that achieves about 12.77 mean squared error (MSE), and the Python code in `tpot_boston_pipeline.py` should look similar to:
+
+```python
+import numpy as np
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.pipeline import make_pipeline
+
+# NOTE: Make sure that the target is labeled 'class' in the data file
+tpot_data = np.recfromcsv('PATH/TO/DATA/FILE', delimiter='COLUMN_SEPARATOR', dtype=np.float64)
+features = np.delete(tpot_data.view(np.float64).reshape(tpot_data.size, -1),
+                     tpot_data.dtype.names.index('class'), axis=1)
+
+training_features, testing_features, training_classes, testing_classes = \
+    train_test_split(features, tpot_data['class'], random_state=42)
+
+exported_pipeline = make_pipeline(
+    ExtraTreesRegressor(max_features=0.76, n_estimators=500)
+)
+
+exported_pipeline.fit(training_features, training_classes)
+results = exported_pipeline.predict(testing_features)
+```
+
+Check the documentation for [more examples and tutorials](http://rhiever.github.io/tpot/examples/MNIST_Example/).
 
 ## Contributing to TPOT
 
@@ -151,6 +204,6 @@ Alternatively, you can cite the repository directly with the following DOI:
 
 ## Support for TPOT
 
-TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov). We're incredibly grateful for their support during the development of this project.
+TPOT was developed in the [Computational Genetics Lab](http://epistasis.org) with funding from the [NIH](http://www.nih.gov) under grant R01 AI117694. We're incredibly grateful for their support during the development of this project.
 
 The TPOT logo was designed by Todd Newmuis, who generously donated his time to the project.
