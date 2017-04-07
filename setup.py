@@ -34,7 +34,7 @@ or Twitter: https://twitter.com/randal_olson
 This project is hosted at https://github.com/rhiever/tpot
 ''',
     zip_safe=True,
-    install_requires=['numpy', 'scipy', 'scikit-learn', 'deap', 'update_checker', 'tqdm'],
+    install_requires=['numpy', 'scipy', 'scikit-learn>=0.18.1', 'deap', 'update_checker', 'tqdm', 'pathos'],
     extras_require={'xgboost': ['xgboost']},
     classifiers=[
         'Intended Audience :: Science/Research',
@@ -44,6 +44,7 @@ This project is hosted at https://github.com/rhiever/tpot
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
         'Topic :: Scientific/Engineering :: Artificial Intelligence'
     ],
     keywords=['pipeline optimization', 'hyperparameter optimization', 'data science', 'machine learning', 'genetic programming', 'evolutionary computation'],
